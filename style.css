@@ -29,7 +29,11 @@ button {
   /* transition-delay: 0.3s; */
 }
 
-button:not(#rules-exit-button) {
+button#score div {
+  font-size: 1.25rem;
+}
+
+button:not(#end-exit-button) {
   font-size: 1.5rem;
   display: inline-block;
 
@@ -42,7 +46,7 @@ button:not(#rules-exit-button) {
   justify-content: center;
 }
 
-#rules-exit-button {
+#end-exit-button {
   height: 25px;
   width: 25px;
   position: absolute;
@@ -75,12 +79,12 @@ button:not(#rules-exit-button) {
   position: relative;
 }
 
-.container.active > div:not(.rules-container) {
+.container.active > div:not(.end-container) {
   filter: blur(3px);
   transition-duration: 0.4s;
 }
 
-.container.active .rules-container {
+.container.active .end-container {
   opacity: 1;
   pointer-events: auto;
   transition-delay: 0.2s;
@@ -113,7 +117,7 @@ button:not(#rules-exit-button) {
   flex-flow: column;
 }
 
-.rules-container {
+.end-container {
   width: 100%;
 
   position: absolute;
@@ -130,7 +134,7 @@ button:not(#rules-exit-button) {
   transition: all 0.3s;
 }
 
-.rules-textarea {
+.end-textarea {
   background: ghostwhite;
   border-radius: 15px;
   box-shadow: 10px 10px 15px 2px rgba(0, 0, 0, 0.2);
@@ -152,19 +156,49 @@ button:not(#rules-exit-button) {
   justify-content: center;
 }
 
+.scene .card .card__face {
+  border: none;
+  border-radius: 10px;
+}
+.scene {
+  display: inline-block;
+  width: 15%;
+  max-width: 150px;
+  min-height: 110px;
+
+  margin: 15px;
+
+  perspective: 900px;
+}
+
 .card {
   border: none;
   border-radius: 10px;
   box-shadow: 3px 3px 5px 3px rgba(50, 50, 50, 0.2);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 1s;
+  transform-style: preserve-3d;
+  transform-origin: center right;
+}
 
-  display: inline-block;
+.card__face {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  backface-visibility: hidden;
+}
 
-  width: 15%;
-  max-width: 150px;
-  min-height: 100px;
-
-  margin: 15px;
-  padding: 15px;
-
+.card__face--front {
   text-align: center;
+  background: white;
+}
+
+.card__face--back {
+  transform: rotateY(180deg);
+}
+
+.card.is-flipped {
+  transform: translateX(-100%) rotateY(-180deg);
 }

@@ -20,7 +20,11 @@ const pokemonUrl =
   "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
 
 
-const POKEMON = pickPokemonNumbers(); // Returns 10 1st Gen Pokemon Numbers
+let pokemon = pickPokemonNumbers(); // Returns 10 1st Gen Pokemon Numbers
+
+let matchingArray = [];
+
+let matchedCount = 0;
 
 // Testing -----------
 
@@ -32,63 +36,130 @@ const siteContainer = document.querySelector(".container");
 const scoreButton = document.querySelector("#score");
 const newGameButton = document.querySelector("#new-game");
 const switchModeButton = document.querySelector("#switch-mode");
-const exitButton = document.querySelector(".close-rules");
+const exitButton = document.querySelector(".close-end");
 
 // Saved Data --------
 const savedGame = JSON.parse(localStorage.getItem('save-data')) || [];
-let currentScore = 0, lowestScore = 0;
-let colorsArray, colorsMatched, pokemonArray, pokemonMatched;
+let currentScore = 0, lowestScore = NaN;
+let colorsArray, pokemonArray;
 
 
+// Document Load Event ----------------
 document.addEventListener('DOMContentLoaded', () => {
-  createGameBoard();
-  populateCards();
-})
+  console.log(savedGame[0]);
+  if (savedGame.length) {
+    // currentScore = savedGame[0]['score']['currentscore'];
+    lowestScore = 99;
+    // lowestScore = savedGame[0]['score']['lowestscore'];
+  }
+  
+  matchingArray = generateCardArray(COLORS);
+  createGameBoard(matchingArray);
+  updateScore(currentScore, lowestScore);
+});
 
 
 // Click Events -----------------------
-scoreButton.addEventListener('click', (event) => {
-  event.preventDefault();
-  siteContainer.classList.add('active');
-});
+// scoreButton.addEventListener('click', (event) => {
+//   event.preventDefault();
+//   siteContainer.classList.add('active');
+// });
 
 newGameButton.addEventListener('click', (event) => {
   event.preventDefault();
-  console.log(savedGame);
-  if (savedGame) {
-    currentScore = savedGame['score']['currentscore'];
-    lowestScore = savedGame['score']['lowestscore'];
-    colorsArray = saveGame['gamestate']['colors'];
-    colorsMatched = savedGame['gamestate']['colorsmatched'];
-    pokemonArray = saveGame['gamestate']['pokemon'];
-    pokemonMatched = saveGame['gamestate']['pokemonmatched'];
-  } else {
-    colorsArray = generateCardArray(COLORS);
-    pokemonArray = generateCardArray(POKEMON);
-  }
 
+  currentScore = 0;
+  lowestScore = savedGame[0]['score']['lowestscore'];
 
-  populateCards();
+  colorsArray = generateCardArray(COLORS);
+  // colorsMatched = [];
+
+  pokemon = pickPokemonNumbers();
+  pokemonArray = generateCardArray(pokemon);
+  // pokemonMatched = [];
+
+  matchedCount = 0;
+
+  if (switchModeButton.innerText === 'Colors') matchingArray = pokemonArray;
+  else if (switchModeButton.innerText === 'Pokemon') matchingArray = colorsArray;
+
+  createGameBoard(matchingArray);
   updateScore(currentScore, lowestScore);
 });
 
 switchModeButton.addEventListener('click', (event) => {
   event.preventDefault();
   if (switchModeButton.innerText === 'Pokemon') {
-    switchModeButton.innerText = 'Colors';
-    matchingArray = colorsArray;
-  } else {
     switchModeButton.innerText = 'Pokemon';
     matchingArray = pokemonArray;
+  } else {
+    switchModeButton.innerText = 'Colors';
+    matchingArray = colorsArray;
   }
+
+  createGameBoard(matchingArray);
 });
 
 exitButton.addEventListener('click', (event) => {
   event.preventDefault();
-  siteContainer.classList.remove('active');
+  siteContainer.classList.toggle('active');
 });
 
+gameContainer.addEventListener('click', handleCardClick);
+
 // Functions --------------------------
+
+let firstCard = null, secondCard = null;
+let timerId;
+
+// Click Card Function ----------------
+function handleCardClick(event) {
+  let currentCard = event.target.parentElement;
+
+  console.log(currentCard);
+  if (!currentCard.classList.contains('card')) return;
+  if (currentCard.classList.contains('is-flipped')) return;
+  // if (currentCard.innerText == '🐢') return;
+  if (timerId) return;
+
+  currentScore += 1;
+  updateScore(currentScore, lowestScore);
+
+  if (!firstCard) {
+    firstCard = currentCard;
+    firstCard.classList.toggle('is-flipped');
+
+  } else if (!secondCard) {
+    secondCard = currentCard;
+    secondCard.classList.toggle('is-flipped');
+
+    let firstCardBack = firstCard.querySelector('div .card__face--back');
+    let secondCardBack = secondCard.querySelector('div .card__face--back');
+
+    if (firstCardBack.classList[2] == secondCardBack.classList[2]) { 
+      console.log('Is Matched');
+      matchedCount += 2;
+      firstCard = null;
+      secondCard = null;
+      
+      if (matchedCount == 20) {
+        siteContainer.classList.toggle('active');
+        saveGame();
+      }
+    } else {
+      timerId = setTimeout(function() {
+      firstCard.classList.toggle('is-flipped');
+      secondCard.classList.toggle('is-flipped');
+      firstCard = null;
+      secondCard = null;
+      timerId = undefined;
+      }, 1000);
+    }
+  } else {
+    firstCard = null;
+    secondCard = null;
+  }
+}
 
 // Update Score
 function updateScore(currentScore, lowestScore) {
@@ -102,24 +173,28 @@ function updateScore(currentScore, lowestScore) {
 }
 
 // Save game state.
-function saveGame(currentScore, lowestScore) {
-  savedGame = {
+function saveGame() {
+  if (currentScore < lowestScore) lowestScore = currentScore;
+  savedGameData = {
     score: {
       currentscore: currentScore,
       lowestscore: lowestScore
     },
-    gamestate: {
-      colors: colorArray,
-      colorsmatched: colorState,
-      pokemon: pokemonArray,
-      pokemonmatched: pokemonState
-    }
+    // gamestate: {
+    //   colors: colorsArray,
+    //   colorsmatched: colorsMatched,
+    //   pokemon: pokemonArray,
+    //   pokemonmatched: pokemonMatched
+    // }
   };
+  savedGame.splice(0, 1, savedGameData);
+  localStorage.setItem('save-data', JSON.stringify(savedGame));
 }
 
 // Create the Game Board. By default, a 4x5 box of divs with the class
 // of card.
-function createGameBoard(numberOfCards = 20) {
+function createGameBoard(cardContentArray) {
+  const numberOfCards = cardContentArray.length || 20;
   const cardRows = numberOfCards / 5;
   const cardCols = numberOfCards / 4;
 
@@ -130,13 +205,24 @@ function createGameBoard(numberOfCards = 20) {
     newRow.classList.add('row');
 
     for (let i = 0; i < cardCols; i++) {
+      const newScene = document.createElement('div');
+      newScene.classList.add('scene');
       const newCard = document.createElement('div');
       newCard.classList.add('card');
 
-      newRow.appendChild(newCard);
+      const newCardFaceFront = document.createElement('div');
+      newCardFaceFront.classList.add('card__face', 'card__face--front');
+      const newCardFaceBack = document.createElement('div');
+      newCardFaceBack.classList.add('card__face', 'card__face--back');
+
+      newCard.appendChild(newCardFaceFront);
+      newCard.appendChild(newCardFaceBack);
+      newScene.appendChild(newCard);
+      newRow.appendChild(newScene);
     }
     gameContainer.append(newRow);
   }
+  populateCards(cardContentArray);
 }
 
 // Shuffle Arrays
@@ -172,8 +258,9 @@ function generatePokemon(cardElement, cardContent) {
   fetch(`https://pokeapi.co/api/v2/pokemon/${cardContent}/`)
     .then((response) => response.json())
     .then((data) => {
-      cardElement.id = data.name;
+      cardElement.classList.add(data.name);
     });
+  cardElement.style.backgroundColor = 'white';
   cardElement.style.backgroundImage = `url(${newPokemonUrl})`;
   cardElement.style.backgroundPosition = 'center';
   cardElement.style.backgroundRepeat = 'no-repeat';
@@ -183,30 +270,28 @@ function generatePokemon(cardElement, cardContent) {
 // Populate the cards with content.
 
 function populateCards(cardContentArray) {
-  const allCardsArray = document.querySelectorAll('div .card');
+  const allCardsBacks = document.querySelectorAll('div .card__face--back');
+  const allCardsFronts = document.querySelectorAll('div .card__face--front');
+
+  for (let card of allCardsFronts) {
+    card.innerText = '🐢';
+    card.style.fontSize = '3rem';
+  };
+
   let cardContentIndex = 0;
 
-  for (let card of allCardsArray) {
+  for (let card of allCardsBacks) {
     let cardContent;
-    if (cardContentArray) cardContent = cardContentArray[cardContentIndex];
-    else cardContent = '🐢';
+
+    if (cardContentArray.length) cardContent = cardContentArray[cardContentIndex];
     
     if (COLORS.includes(cardContent)) {
       card.classList.add(cardContent);
       card.style.backgroundColor = cardContent;
-    } else if (POKEMON.includes(cardContent)) {
+    } else if (pokemon.includes(cardContent)) {
       card = generatePokemon(card, cardContent);
-    } else {
-      card.innerText = cardContent;
-      card.style.fontSize = '3rem';
     }
 
     cardContentIndex++;
   }
 }
-
-// Let the player try to match cards.
-
-// Update the save file every click.
-// Every time the score is ticked.
-// Save file > Save Score and Gameboard State.
