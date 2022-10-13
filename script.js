@@ -46,16 +46,14 @@ let colorsArray, pokemonArray;
 
 // Document Load Event ----------------
 document.addEventListener('DOMContentLoaded', () => {
-  console.log(savedGame[0]);
   if (savedGame.length) {
     // currentScore = savedGame[0]['score']['currentscore'];
-    lowestScore = 99;
-    // lowestScore = savedGame[0]['score']['lowestscore'];
+    lowestScore = savedGame[0]['score']['lowestscore'];
   }
   
   matchingArray = generateCardArray(COLORS);
   createGameBoard(matchingArray);
-  updateScore(currentScore, lowestScore);
+  updateScore();
 });
 
 
@@ -116,7 +114,6 @@ let timerId;
 function handleCardClick(event) {
   let currentCard = event.target.parentElement;
 
-  console.log(currentCard);
   if (!currentCard.classList.contains('card')) return;
   if (currentCard.classList.contains('is-flipped')) return;
   // if (currentCard.innerText == '🐢') return;
@@ -162,11 +159,14 @@ function handleCardClick(event) {
 }
 
 // Update Score
-function updateScore(currentScore, lowestScore) {
-  scoreButton.innerText = '';
+function updateScore() {
+  scoreButton.innerHTML = '';
   const lowestScoreDiv = document.createElement('div');
   const currentScoreDiv = document.createElement('div');
-  lowestScoreDiv.innerText = `Lowest Score: ${lowestScore}`;
+
+  if (!lowestScore) lowestScoreDiv.innerText = '';
+  else lowestScoreDiv.innerText = `Lowest Score: ${lowestScore}`;
+
   currentScoreDiv.innerText = `Current Score: ${currentScore}`;
   scoreButton.appendChild(lowestScoreDiv);
   scoreButton.appendChild(currentScoreDiv);
@@ -174,7 +174,12 @@ function updateScore(currentScore, lowestScore) {
 
 // Save game state.
 function saveGame() {
+  if (lowestScore == NaN || lowestScore == null) lowestScore = currentScore;
   if (currentScore < lowestScore) lowestScore = currentScore;
+
+  console.log(currentScore);
+  console.log(lowestScore);
+
   savedGameData = {
     score: {
       currentscore: currentScore,
@@ -188,6 +193,7 @@ function saveGame() {
     // }
   };
   savedGame.splice(0, 1, savedGameData);
+  console.log(savedGame);
   localStorage.setItem('save-data', JSON.stringify(savedGame));
 }
 
